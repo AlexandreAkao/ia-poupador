@@ -79,7 +79,13 @@ public class Poupador extends ProgramaPoupador {
             {-2, 2}, {-1, 2}, {0, 2}, {1, 2}, {2, 2},
     };
 
-    private int[][] memento = new int[30][30];
+    private final int[][] moves = {
+            {0, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, 0}
+    };
+
+    private final List<Integer> lastSteps = new ArrayList<>(Collections.nCopies(3, 0));
+
+    private final int[][] memento = new int[30][30];
 
     Poupador() {
         Arrays.stream(memento).forEach(tile -> Arrays.fill(tile, -3));
@@ -87,20 +93,28 @@ public class Poupador extends ProgramaPoupador {
 
     public int acao() {
         this.memorialize();
-        return this.movimentation();
+        int move = this.movimentation();
+        setLastSteps(move);
+        return move;
+    }
+
+    private void setLastSteps(int newStep) {
+        lastSteps.set(2, lastSteps.get(1));
+        lastSteps.set(1, lastSteps.get(0));
+        lastSteps.set(0, newStep);
     }
 
     private void memorialize() {
         int posX = (int) this.sensor.getPosicao().getX();
         int posY = (int) this.sensor.getPosicao().getY();
         int[] vision = this.sensor.getVisaoIdentificacao();
+        memento[posX][posY] = 10;
 
         for (int i = 0; i < vision.length; i++) {
             if (vision[i] != Constantes.foraAmbiene) {
                 int newPosX = posX + moveHelper[i][0];
                 int newPosY = posY + moveHelper[i][1];
-                memento[posX][posY] = 10; // ja passou
-                memento[newPosX][newPosY] = vision[i];
+                if (memento[newPosX][newPosY] != 10) memento[newPosX][newPosY] = vision[i];
             }
         }
     }
@@ -111,6 +125,10 @@ public class Poupador extends ProgramaPoupador {
 
     private List<Integer> nearbyPowerUp() {
         return nearbyCode(Constantes.numeroPastinhaPoder);
+    }
+
+    private List<Integer> nearbyBank() {
+        return nearbyCode(Constantes.numeroBanco);
     }
 
     private List<Integer> nearbyLadrao() {
@@ -182,63 +200,110 @@ public class Poupador extends ProgramaPoupador {
         return stepsTo(nearbyLadrao());
     }
 
+    private Step stepsToBank() {
+        return stepsTo(nearbyBank());
+    }
+
     private boolean isTopWall() {
         int[] vision = this.sensor.getVisaoIdentificacao();
 
-        int[] topVision = {
-                vision[0], vision[1], vision[2], vision[3], vision[4],
-                vision[5], vision[6], vision[7], vision[8], vision[9],
-        };
+//        int[] topVision = {
+//                vision[0], vision[1], vision[2], vision[3], vision[4],
+//                vision[5], vision[6], vision[7], vision[8], vision[9],
+//        };
+//
+//        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
 
-        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
+        return vision[7] == Constantes.numeroParede;
     }
 
     private boolean isBottomWall() {
         int[] vision = this.sensor.getVisaoIdentificacao();
 
-        int[] topVision = {
-                vision[14], vision[15], vision[16], vision[17], vision[18],
-                vision[19], vision[20], vision[21], vision[22], vision[23],
-        };
-
-        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
+//        int[] topVision = {
+//                vision[14], vision[15], vision[16], vision[17], vision[18],
+//                vision[19], vision[20], vision[21], vision[22], vision[23],
+//        };
+//
+//        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
+        return vision[16] == Constantes.numeroParede;
     }
 
     private boolean isLeftWall() {
         int[] vision = this.sensor.getVisaoIdentificacao();
 
-        int[] topVision = {
-                vision[0], vision[1], vision[5], vision[6], vision[10],
-                vision[11], vision[14], vision[15], vision[19], vision[20],
-        };
-
-        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
+//        int[] topVision = {
+//                vision[0], vision[1], vision[5], vision[6], vision[10],
+//                vision[11], vision[14], vision[15], vision[19], vision[20],
+//        };
+//
+//        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
+        return vision[11] == Constantes.numeroParede;
     }
 
     private boolean isRightWall() {
         int[] vision = this.sensor.getVisaoIdentificacao();
 
-        int[] topVision = {
-                vision[3], vision[4], vision[8], vision[9], vision[12],
-                vision[13], vision[17], vision[18], vision[22], vision[23],
-        };
+//        int[] topVision = {
+//                vision[3], vision[4], vision[8], vision[9], vision[12],
+//                vision[13], vision[17], vision[18], vision[22], vision[23],
+//        };
+//
+//        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
 
-        return Arrays.stream(topVision).allMatch(tile -> tile == Constantes.foraAmbiene);
+        return vision[12] == Constantes.numeroParede;
     }
 
-    private int random() {
-        int random = (int) (Math.random() * 5);
+    private int randomWithout(int[] excludes) {
+        int posX = (int) this.sensor.getPosicao().getX();
+        int posY = (int) this.sensor.getPosicao().getY();
 
-        if (
-                random == Moves.Up.getValue() && isTopWall() ||
-                random == Moves.Down.getValue() && isBottomWall() ||
-                random == Moves.Left.getValue() && isLeftWall() ||
-                random == Moves.Right.getValue() && isRightWall()
+        int random = (int) (Math.random() * 4) + 1;
+        if (excludes.length == 4) return random;
+        int[] moveTo = this.moves[random];
+        int newPosX = posX + moveTo[0];
+        int newPosY = posY + moveTo[1];
+
+        int finalRandom = random;
+        boolean alreadyHave = Arrays.stream(excludes).anyMatch(move -> move == finalRandom);
+
+        while (
+            newPosX == 30 ||
+            newPosY == 30 ||
+            newPosX == -1 ||
+            newPosY == -1 ||
+            alreadyHave
         ) {
-            return random();
+            random = (int) (Math.random() * 4) + 1;
+            moveTo = this.moves[random];
+            newPosX = posX + moveTo[0];
+            newPosY = posY + moveTo[1];
+            int finalRandom1 = random;
+            alreadyHave = Arrays.stream(excludes).anyMatch(move -> move == finalRandom1);
+            if ((newPosX == 30 || newPosY == 30 || newPosX == -1 || newPosY == -1) && !alreadyHave) {
+                return random;
+            }
+//            System.out.println(newPosX + " ---- " + newPosY + " ----- " + alreadyHave);
         }
 
-        System.out.println("random -- " + random);
+        Integer[] excludesParse = Arrays.stream(excludes).boxed().toArray(Integer[]::new);
+        ArrayList<Integer> newRandom = new ArrayList<>(Arrays.asList(excludesParse));
+        newRandom.add(random);
+        int[] arrayInt = newRandom.stream().mapToInt(i -> i).toArray();
+
+//        System.out.println(newPosX + " ---- " + newPosY + " ----- " + this.memento[newPosX][newPosY] + " ---- " + Arrays.toString(arrayInt) + " ---- " + random);
+        if (this.memento[newPosX][newPosY] == 10) randomWithout(arrayInt);
+
+        if (
+            random == Moves.Up.getValue() && isTopWall() ||
+            random == Moves.Down.getValue() && isBottomWall() ||
+            random == Moves.Left.getValue() && isLeftWall() ||
+            random == Moves.Right.getValue() && isRightWall()
+        ) {
+            return randomWithout(arrayInt);
+        }
+
+//        System.out.println("random -- " + random);
         return random;
     }
 
@@ -265,43 +330,73 @@ public class Poupador extends ProgramaPoupador {
             int y = Integer.compare(sm.getPosY(), posY);
 
             if (x == 0) {
-                if (vision[16] == Constantes.numeroParede || vision[7] == Constantes.numeroParede) {
+                if (vision[16] == Constantes.numeroParede && y == 1) {
                     if (vision[11] == Constantes.numeroParede) {
-                        System.out.println("remember1 1 -- " + Moves.Right.getValue());
+//                        System.out.println("remember1 1 -- " + Moves.Right.getValue());
                         return Moves.Right.getValue();
                     }
-                    System.out.println("remember2 1 -- " + Moves.Left.getValue());
+//                    System.out.println("remember2 1 -- " + Moves.Left.getValue());
+                    return Moves.Left.getValue();
+                } else if (vision[7] == Constantes.numeroParede && y == -1) {
+                    if (vision[11] == Constantes.numeroParede) {
+//                        System.out.println("remember1 1 -- " + Moves.Right.getValue());
+                        return Moves.Right.getValue();
+                    }
+//                    System.out.println("remember2 1 -- " + Moves.Left.getValue());
                     return Moves.Left.getValue();
                 }
-                System.out.println("remember3 1 -- " + (y == 1 ? Moves.Down.getValue() : Moves.Up.getValue()));
+//                System.out.println("remember3 1 -- " + (y == 1 ? Moves.Down.getValue() : Moves.Up.getValue()));
                 return y == 1 ? Moves.Down.getValue() : Moves.Up.getValue();
             } else if (y == 0 || (y == 1 && vision[16] == Constantes.numeroParede) || (y == -1 && vision[7] == Constantes.numeroParede)) {
-                if (vision[11] == Constantes.numeroParede || vision[12] == Constantes.numeroParede) {
+                if (vision[11] == Constantes.numeroParede && x == -1) {
                     if (vision[16] == Constantes.numeroParede) {
-                        System.out.println("remember1 2 -- " + Moves.Up.getValue());
+//                        System.out.println("remember1 2 -- " + Moves.Up.getValue());
                         return Moves.Up.getValue();
                     }
-                    System.out.println("remember2 2 -- " + Moves.Down.getValue());
+//                    System.out.println("remember2 2 -- " + Moves.Down.getValue());
+                    return Moves.Down.getValue();
+                } else if (vision[12] == Constantes.numeroParede && x == 1) {
+                    if (vision[16] == Constantes.numeroParede) {
+//                        System.out.println("remember1 2 -- " + Moves.Up.getValue());
+                        return Moves.Up.getValue();
+                    }
+//                    System.out.println("remember2 2 -- " + Moves.Down.getValue());
                     return Moves.Down.getValue();
                 }
-                System.out.println("remember3 2 -- " + (x == 1 ? Moves.Right.getValue() : Moves.Left.getValue()));
+//                System.out.println("remember3 2 -- " + (x == 1 ? Moves.Right.getValue() : Moves.Left.getValue()));
                 return x == 1 ? Moves.Right.getValue() : Moves.Left.getValue();
             }
         }
 
-        return random();
+        if (code != Constantes.posicaoLivre) return remember(Constantes.posicaoLivre);
+
+        return randomWithout(new int[]{});
     }
 
     private int movimentation() {
+        int posX = (int) this.sensor.getPosicao().getX();
+        int posY = (int) this.sensor.getPosicao().getY();
+
         Step stepsToCoin = stepsToCoin();
         Step stepsToPowerUp = stepsToPowerUp();
         Step stepsToLadrao = stepsToLadrao();
+        Step stepsToBank = stepsToBank();
 
         int moveToCoin = moveTo(stepsToCoin.getPositions());
-        System.out.println("moveToCoin -- " + moveToCoin);
+//        System.out.println("moveToCoin -- " + moveToCoin);
+
         if (moveToCoin == -1) {
-            return remember(Constantes.numeroMoeda);
+            moveToCoin = remember(Constantes.numeroMoeda);
         }
+
+        int[] moveTo = this.moves[moveToCoin];
+        int newPosX = posX + moveTo[0];
+        int newPosY = posY + moveTo[1];
+
+        if (this.memento[newPosX][newPosY] != Constantes.numeroMoeda) {
+            return randomWithout(new int[]{});
+        }
+
         return moveToCoin;
     }
 
