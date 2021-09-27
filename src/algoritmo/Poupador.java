@@ -156,6 +156,7 @@ public class Poupador extends ProgramaPoupador {
     private List<Point> visionPosition = new ArrayList<>();
     private List<Point> memoryCoin = new ArrayList<>();
     private List<Point> memoryUnvisited = new ArrayList<>();
+    private List<Point> memoryBank = new ArrayList<>();
 
     private final int[][] memento = new int[30][30];
 
@@ -189,6 +190,7 @@ public class Poupador extends ProgramaPoupador {
         memento[posX][posY] = 10;
         memoryCoin.remove(posAtual);
         memoryUnvisited.remove(posAtual);
+        memoryBank.remove(posAtual);
         for (int i = 0; i < vision.length; i++) {
             int newPosX = posX + moveHelper[i][0];
             int newPosY = posY + moveHelper[i][1];
@@ -202,9 +204,9 @@ public class Poupador extends ProgramaPoupador {
                     memoryUnvisited.add(newPoint);
                 }
 
-                if(vision[i] == Constantes.numeroBanco && !memoria.contains(new Point(newPosX, newPosY))) {
+                if(vision[i] == Constantes.numeroBanco && !memoryBank.contains(new Point(newPosX, newPosY))) {
                     System.out.println("pos do banco é:" + new Point(newPosX, newPosY));
-                    memoria.add(new Point(newPosX, newPosY));
+                    memoryBank.add(new Point(newPosX, newPosY));
                 }
 
                 if (memento[newPosX][newPosY] != 10) memento[newPosX][newPosY] = vision[i];
