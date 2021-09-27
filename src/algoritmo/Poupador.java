@@ -555,8 +555,8 @@ public class Poupador extends ProgramaPoupador {
         List<String> agenteStr = agente.stream().map(Arrays::toString).collect(Collectors.toList());
         agenteStr.removeAll(ladraoStr);
         agenteStr.forEach(x -> {
-            var pos = x.replaceAll("[(\\[)(\\])]", "").replace(" ", "");
-            var posA = pos.split(",");
+            String pos = x.replaceAll("[(\\[)(\\])]", "").replace(" ", "");
+            String[] posA = pos.split(",");
             possiblePositions.add(new int[]{Integer.parseInt(posA[0]), Integer.parseInt(posA[1])});
         });
         return possiblePositions;
@@ -571,7 +571,7 @@ public class Poupador extends ProgramaPoupador {
         if ((int) agente.getY() < movement[1]) {
             moveY = moveY * -1;
         }
-        var toDo = new int[] {moveX, moveY};
+        int[] toDo = new int[] {moveX, moveY};
         for (int i = 0; i < moves.length; i++) {
             if(moves[i][0] == toDo[0] && moves[i][1] == toDo[1]) {
                 return i;
@@ -581,13 +581,13 @@ public class Poupador extends ProgramaPoupador {
     }
 
     private int avoidLadrao(int[] ladraoPosition) {
-        var agente = this.sensor.getPosicao();
+        Point agente = this.sensor.getPosicao();
         List<int[]> ladraoRange = new ArrayList<>();
         List<int[]> newAgentePositions = new ArrayList<>();
-        for (var pos: possibleRange) {
+        for (int[] pos: possibleRange) {
             ladraoRange.add(new int[] {ladraoPosition[0] + pos[0], ladraoPosition[1] + pos[1]});
         }
-        for (var pos: moves) {
+        for (int[] pos: moves) {
             newAgentePositions.add(new int[] {(int) (agente.getX() + pos[0]), (int) (agente.getY() + pos[1])});
         }
         List<String> posicoes = ladraoRange.stream().map(Object::toString).collect(Collectors.toList());
@@ -600,8 +600,8 @@ public class Poupador extends ProgramaPoupador {
         }
         Random rand = new Random();
 
-        for (var move: possibleMovements) {
-            var y = pickMovement(agente, move);
+        for (int[] move: possibleMovements) {
+            int y = pickMovement(agente, move);
             if (!(this.sensor.getVisaoIdentificacao()[visionMove[y]] == 1)) {
                 // ver se vai estar no range do ladrao
                 if (!inLadraoRange(ladraoRange, move))
@@ -611,12 +611,12 @@ public class Poupador extends ProgramaPoupador {
                     }
             }
         }
-        var movement = possibleMovements.get(rand.nextInt(possibleMovements.size()));
+        int[] movement = possibleMovements.get(rand.nextInt(possibleMovements.size()));
         return pickMovement(agente, movement);
     }
 
     public boolean inLadraoRange(List<int[]> ladraoRange, int[] move) {
-        var agente = this.sensor.getPosicao();
+        Point agente = this.sensor.getPosicao();
         for (int[] p: ladraoRange) {
             if ( ((int) agente.getX() + move[0] == p[0]) || ((int) agente.getY() + move[1] == p[1]))
                 return true;
@@ -625,9 +625,9 @@ public class Poupador extends ProgramaPoupador {
     }
 
     private int[] getWhereLadrao(Step ladrao) {
-        var ladr = stepsToLadrao();
-        var pos = this.sensor.getPosicao();
-        var toLadrao = moveHelper[ladr.getPositions()[0]];
+        Step ladr = stepsToLadrao();
+        Point pos = this.sensor.getPosicao();
+        int[] toLadrao = moveHelper[ladr.getPositions()[0]];
         return new int[]{(int) (pos.getX() + toLadrao[0]), (int) (pos.getY() +toLadrao[1])};
     }
 
@@ -647,7 +647,7 @@ public class Poupador extends ProgramaPoupador {
         Step stepsToBank = stepsToBank();
 
         if (checkForLadrao(stepsToLadrao)) {
-            var move = avoidLadrao(getWhereLadrao(stepsToLadrao));
+            int move = avoidLadrao(getWhereLadrao(stepsToLadrao));
             System.out.printf("TINHA LADRAO AQUI!, ACAO TOMADA: %s\n", move);
             return move;
         } else {
