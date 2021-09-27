@@ -154,7 +154,8 @@ public class Poupador extends ProgramaPoupador {
     private final List<Integer> lastSteps = new ArrayList<>(Collections.nCopies(8, 0));
 
     private List<Point> visionPosition = new ArrayList<>();
-    private List<Point> memoria = new ArrayList<>();
+    private List<Point> memoryCoin = new ArrayList<>();
+    private List<Point> memoryUnvisited = new ArrayList<>();
 
     private final int[][] memento = new int[30][30];
 
@@ -186,23 +187,29 @@ public class Poupador extends ProgramaPoupador {
         Point posAtual = sensor.getPosicao();
         int[] vision = this.sensor.getVisaoIdentificacao();
         memento[posX][posY] = 10;
-        memoria.remove(posAtual);
+        memoryCoin.remove(posAtual);
+        memoryUnvisited.remove(posAtual);
         for (int i = 0; i < vision.length; i++) {
             int newPosX = posX + moveHelper[i][0];
             int newPosY = posY + moveHelper[i][1];
             if (vision[i] != Constantes.foraAmbiene) {
-                if(vision[i] == Constantes.numeroMoeda && !memoria.contains(new Point(newPosX, newPosY))) {
-                    memoria.add(new Point(newPosX, newPosY));
+                Point newPoint = new Point(newPosX, newPosY);
+                if(vision[i] == Constantes.numeroMoeda && !memoryCoin.contains(newPoint)) {
+                    memoryCoin.add(newPoint);
+                }
+
+                if(vision[i] == -3 && !memoryUnvisited.contains(newPoint)) {
+                    memoryUnvisited.add(newPoint);
                 }
 
                 if (memento[newPosX][newPosY] != 10) memento[newPosX][newPosY] = vision[i];
 
                 if (vision[i] != Constantes.semVisao && vision[i] != Constantes.numeroPastinhaPoder) {
-                    visionPosition.add(new Point(newPosX, newPosY));
+                    visionPosition.add(newPoint);
                 }
             }
         }
-        memoria.sort((p1, p2) -> {
+        memoryCoin.sort((p1, p2) -> {
             int stepsToP1 = (int) (Math.abs(posX - p1.getX()) + Math.abs(posY - p1.getY()));
             int stepsToP2 = (int) (Math.abs(posX - p2.getX()) + Math.abs(posY - p2.getY()));
 
@@ -491,13 +498,14 @@ public class Poupador extends ProgramaPoupador {
         Point point = this.sensor.getPosicao();
         int x, y;
         boolean find = false;
+        List<Point> memory = code == -3 ? memoryUnvisited : memoryCoin;
         List<Integer> movements = new ArrayList<>();
         LinkedList<Coordinate> queue = new LinkedList<>();
         List<Point> visited = new ArrayList<>();
 
-        if (isInLoop() || memoria.size() == 0) return remember(code);
+        if (isInLoop() || memory.size() == 0) return randomWithout(new int[]{});
 
-        Coordinate end = new Coordinate(memoria.get(memoria.size() - 1), 0, null);
+        Coordinate end = new Coordinate(memory.get(memory.size() - 1), 0, null);
 
         Coordinate aux;
         Coordinate currentPos = new Coordinate(point, 0, null);
@@ -507,7 +515,7 @@ public class Poupador extends ProgramaPoupador {
         while (!queue.isEmpty()) {
             aux = queue.pop();
 
-            if (memoria.contains(aux.getPoint())) {
+            if (memory.contains(aux.getPoint())) {
                 find = true;
                 end = aux;
                 break;
@@ -544,7 +552,7 @@ public class Poupador extends ProgramaPoupador {
         }
 
 
-        return remember(code);
+        return explore(-3);
     }
 
     // LADRAO
