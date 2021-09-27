@@ -151,8 +151,6 @@ public class Poupador extends ProgramaPoupador {
 
     private final int[] visionMove = {0, 7, 16, 11, 12};
 
-    private int moedas;
-
     private final List<Integer> lastSteps = new ArrayList<>(Collections.nCopies(8, 0));
 
     private List<Point> visionPosition = new ArrayList<>();
@@ -167,12 +165,6 @@ public class Poupador extends ProgramaPoupador {
     }
 
     public int acao() {
-        if (moedas > this.sensor.getNumeroDeMoedas()) {
-            System.out.println("FUI ROUBADO!!");
-            moedas = this.sensor.getNumeroDeMoedas();
-        }else{
-            moedas = this.sensor.getNumeroDeMoedas();
-        }
         this.memorialize();
         int move = this.movimentation();
         this.collectCoins();
@@ -657,7 +649,7 @@ public class Poupador extends ProgramaPoupador {
                     continue;
                 }
 
-                if (cheiro > 1 || cheiro == 0) {
+                if (cheiro >= 2 || cheiro == 0 ) {
                     possibleMoves.add(move.getValue());
                 }
             }
@@ -679,31 +671,32 @@ public class Poupador extends ProgramaPoupador {
 
         for (int i = 1; i <= 5; i++) {
             int pos = visao[movementVision.get(i)];
-            if ((pos < 200) && (pos != 1) && (pos != -1)) {
+            if ((pos <= 200) && (pos != 1) && (pos != -1)) {
                 if ((pos == Constantes.numeroPastinhaPoder) && !(this.sensor.getNumeroDeMoedas() >= 5)) {
                     continue;
                 }
-                System.out.println("FALLBACK DE FUGIR");
+
                 if(movementVision.get(i) == 2) {
-                    if(visao[21] < 200 && visao[16] < 200) {
+                    if(visao[21] <= 200 && visao[16] <= 200) {
+                        System.out.println("FALLBACK DE FUGIR" + pos);
                         return i;
                     }
                 }
 
                 if(movementVision.get(i) == 3) {
-                    if(visao[10] < 200 && visao[11] < 200) {
+                    if(visao[10] <= 200 && visao[11] <= 200) {
                         return i;
                     }
                 }
 
                 if(movementVision.get(i) == 4) {
-                    if(visao[12] < 200 && visao[13] < 200) {
+                    if(visao[12] <= 200 && visao[13] <= 200) {
                         return i;
                     }
                 }
 
                 if(movementVision.get(i) == 1) {
-                    if(visao[2] < 200 && visao[7] < 200) {
+                    if(visao[2] <= 200 && visao[7] <= 200) {
                         return i;
                     }
                 }
