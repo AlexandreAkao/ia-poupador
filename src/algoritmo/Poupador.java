@@ -167,7 +167,6 @@ public class Poupador extends ProgramaPoupador {
     public int acao() {
         this.memorialize();
         int move = this.movimentation();
-        this.collectCoins();
         setLastSteps(move);
         return move;
     }
@@ -202,8 +201,6 @@ public class Poupador extends ProgramaPoupador {
         int[] vision = this.sensor.getVisaoIdentificacao();
         memento[posX][posY] = 10;
         memoryCoin.remove(posAtual);
-        memoryUnvisited.remove(posAtual);
-        memoryBank.remove(posAtual);
         for (int i = 0; i < vision.length; i++) {
             int newPosX = posX + moveHelper[i][0];
             int newPosY = posY + moveHelper[i][1];
@@ -506,6 +503,66 @@ public class Poupador extends ProgramaPoupador {
         return randomWithout(new int[]{});
     }
 
+    private int deposity() {
+        Point point = this.sensor.getPosicao();
+        int x, y;
+        boolean find = false;
+        List<Integer> movements = new ArrayList<>();
+        LinkedList<Coordinate> queue = new LinkedList<>();
+        List<Point> visited = new ArrayList<>();
+
+        if (isInLoop() || memoryBank.size() == 0) return remember(Constantes.numeroBanco);
+
+        Coordinate end = new Coordinate(this.memoryBank.get(0), 0, null);
+
+        Coordinate aux;
+        Coordinate currentPos = new Coordinate(point, 0, null);
+        visited.add(currentPos.getPoint());
+        queue.add(currentPos);
+
+        while (!queue.isEmpty()) {
+            aux = queue.pop();
+
+            if (memoryBank.contains(aux.getPoint())) {
+                find = true;
+                end = aux;
+                break;
+            }
+
+            for (int i = 1; i < this.moves.length; i++) {
+                x = (int) (aux.getPoint().getX() + this.moves[i][0]);
+                y = (int) (aux.getPoint().getY() + this.moves[i][1]);
+                Point newPoint = new Point(x, y);
+
+                if (
+                        visionPosition.contains(newPoint) &&
+                                !visited.contains(newPoint) &&
+                                this.memento[x][y] != Constantes.numeroParede &&
+                                this.memento[x][y] != Constantes.numeroPastinhaPoder &&
+                                this.memento[x][y] != Constantes.numeroBanco &&
+                                this.memento[x][y] != Constantes.numeroPoupador01 &&
+                                this.memento[x][y] != Constantes.numeroPoupador02
+                ) {
+                    Coordinate n = new Coordinate(newPoint, i, aux);
+                    visited.add(n.getPoint());
+                    queue.add(n);
+                }
+            }
+        }
+
+        if (find) {
+            while (end.getParent() != null) {
+                movements.add(end.getMove());
+                end = end.getParent();
+            }
+
+            return movements.get(movements.size() - 1);
+        }
+
+
+        return remember(Constantes.numeroBanco);
+    }
+
     private int explore(int code) {
         Point point = this.sensor.getPosicao();
         int x, y;
@@ -515,7 +572,7 @@ public class Poupador extends ProgramaPoupador {
         LinkedList<Coordinate> queue = new LinkedList<>();
         List<Point> visited = new ArrayList<>();
 
-        if (isInLoop() || memory.size() == 0) return randomWithout(new int[]{});
+        if (isInLoop() || memory.size() == 0) return remember(code);
 
         Coordinate end = new Coordinate(memory.get(memory.size() - 1), 0, null);
 
@@ -564,7 +621,7 @@ public class Poupador extends ProgramaPoupador {
         }
 
 
-        return explore(-3);
+        return remember(code);
     }
 
     // LADRAO
@@ -724,7 +781,6 @@ public class Poupador extends ProgramaPoupador {
 
     // LADRAO
 
-
     private int movimentation() {
         int[] vision = this.sensor.getVisaoIdentificacao();
 
@@ -733,7 +789,9 @@ public class Poupador extends ProgramaPoupador {
         Step stepsToLadrao = stepsToLadrao();
         Step stepsToBank = stepsToBank();
 
-        if (checkForLadrao(stepsToLadrao)) {
+        if (stepsToBank.getStepsTo() != -1 && this.sensor.getNumeroDeMoedas() > 0) {
+            return deposity();
+        } else if (checkForLadrao(stepsToLadrao)) {
             return avoidLadrao();
         }
 
