@@ -441,25 +441,19 @@ public class Poupador extends ProgramaPoupador {
             if (x == 0) {
                 if (vision[16] == Constantes.numeroParede && y == 1) {
                     if (vision[11] == Constantes.numeroParede) {
-//                        System.out.println("remember1 1 -- " + Moves.Right.getValue());
                         return Moves.Right.getValue();
                     } else if (vision[12] == Constantes.numeroParede) {
                         return Moves.Left.getValue();
                     }
-//                    System.out.println("remember2 1 -- " + Moves.Left.getValue());
                     return Moves.Left.getValue();
                 } else if (vision[7] == Constantes.numeroParede && y == -1) {
                     if (vision[11] == Constantes.numeroParede) {
-//                        System.out.println("remember1 1 -- " + Moves.Right.getValue());
                         return Moves.Right.getValue();
                     } else if (vision[12] == Constantes.numeroParede) {
                         return Moves.Left.getValue();
                     }
-
-//                    System.out.println("remember2 1 -- " + Moves.Left.getValue());
                     return Moves.Left.getValue();
                 }
-//                System.out.println("remember3 1 -- " + (y == 1 ? Moves.Down.getValue() : Moves.Up.getValue()));
                 return y == 1 ? Moves.Down.getValue() : Moves.Up.getValue();
             } else if (
                     y == 0 ||
@@ -468,26 +462,24 @@ public class Poupador extends ProgramaPoupador {
             ) {
                 if (vision[11] == Constantes.numeroParede && x == -1) {
                     if (vision[16] == Constantes.numeroParede) {
-//                        System.out.println("remember1 2 -- " + Moves.Up.getValue());
                         return Moves.Up.getValue();
+                    } else if (vision[7] == Constantes.numeroParede) {
+                        return Moves.Down.getValue();
                     }
-//                    System.out.println("remember2 2 -- " + Moves.Down.getValue());
                     return Moves.Down.getValue();
                 } else if (vision[12] == Constantes.numeroParede && x == 1) {
                     if (vision[16] == Constantes.numeroParede) {
-//                        System.out.println("remember1 2 -- " + Moves.Up.getValue());
                         return Moves.Up.getValue();
+                    } else if (vision[7] == Constantes.numeroParede) {
+                        return Moves.Down.getValue();
                     }
-//                    System.out.println("remember2 2 -- " + Moves.Down.getValue());
                     return Moves.Down.getValue();
                 }
-//                System.out.println("remember3 2 -- " + (x == 1 ? Moves.Right.getValue() : Moves.Left.getValue()));
                 return x == 1 ? Moves.Right.getValue() : Moves.Left.getValue();
             }
         }
 
         if (code != Constantes.posicaoLivre) {
-//            System.out.println("Search free");
             return remember(Constantes.posicaoLivre);
         }
 
