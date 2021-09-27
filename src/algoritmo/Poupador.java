@@ -202,6 +202,12 @@ public class Poupador extends ProgramaPoupador {
                 }
             }
         }
+        memoria.sort((p1, p2) -> {
+            int stepsToP1 = (int) (Math.abs(posX - p1.getX()) + Math.abs(posY - p1.getY()));
+            int stepsToP2 = (int) (Math.abs(posX - p2.getX()) + Math.abs(posY - p2.getY()));
+
+            return stepsToP1 - stepsToP2;
+        });
     }
 
     private List<Integer> nearbyCoin() {
@@ -401,50 +407,6 @@ public class Poupador extends ProgramaPoupador {
         return random;
     }
 
-//    private void generateTree(Coordinate begin, Coordinate end) {
-//        begin.addAdj();
-//
-//
-//        while () {
-//            Coordinate top = new Coordinate(begin.getPosX(), begin.getPosY() - 1, 1, begin);
-//            Coordinate down = new Coordinate(begin.getPosX(), begin.getPosY() + 1, 2, begin);
-//            Coordinate right = new Coordinate(begin.getPosX() + 1, begin.getPosY(), 3, begin);
-//            Coordinate left = new Coordinate(begin.getPosX() - 1, begin.getPosY(), 4, begin);
-//
-//        }
-//    }
-
-//    private void generateGraph(Coordinate begin, Coordinate end, List<Coordinate> list) {
-//        int posX = begin.getPosX();
-//        int posY = begin.getPosY();
-//
-//        Coordinate top = new Coordinate(posX, posY - 1, 1, begin);
-//        Coordinate down = new Coordinate(posX, posY + 1, 2, begin);
-//        Coordinate right = new Coordinate(posX + 1, posY, 3, begin);
-//        Coordinate left = new Coordinate(posX - 1, posY, 4, begin);
-//        Coordinate[] listDirection = new Coordinate[]{top, down, right, left};
-//
-//        for (Coordinate direction : listDirection) {
-//            if (list.size() > 0 || direction.getPosX() == 30 || direction.getPosY() == 30 || direction.getPosX() == -1 || direction.getPosY() == -1) {
-//                continue;
-//            }
-//
-//            if (direction.getPosX() == end.getPosX() && direction.getPosY() == end.getPosY()) {
-//                list.add(direction);
-//                break;
-//            }
-//
-//            if (
-//                    !(this.memento[direction.getPosX()][direction.getPosY()] == Constantes.numeroParede ||
-//                            this.memento[direction.getPosX()][direction.getPosY()] == Constantes.numeroBanco) &&
-//                            (begin.getParent() == null ||
-//                            !(direction.getPosX() == begin.getParent().getPosX() && direction.getPosY() == begin.getParent().getPosY()))
-//            ) {
-//                this.generateGraph(direction, end, list);
-//            }
-//        }
-//    }
-
     private int remember(int code) {
         int posX = (int) this.sensor.getPosicao().getX();
         int posY = (int) this.sensor.getPosicao().getY();
@@ -464,16 +426,6 @@ public class Poupador extends ProgramaPoupador {
         if (isInLoop()) return randomWithout(new int[]{});
 
         memory.sort(Comparator.comparingInt(StepMemento::getStepsTo));
-
-//        if (memory.size() > 0) {
-//            Coordinate currentPos = new Coordinate(posX, posY, 0, null);
-//            Coordinate finalPos = new Coordinate(memory.get(0).getPosX(), memory.get(0).getPosY(), -1, null);
-////            Coordinate currentPos = new Coordinate(18, 26, 0, null);
-////            Coordinate finalPos = new Coordinate(22, 22, -1, null);
-//            List<Coordinate> c = new ArrayList<>();
-//            generateGraph(currentPos, finalPos);
-//            System.out.println(Arrays.toString(c.toArray()));
-//        }
 
         for (StepMemento sm : memory) {
             int x = Integer.compare(sm.getPosX(), posX);
@@ -535,7 +487,6 @@ public class Poupador extends ProgramaPoupador {
         return randomWithout(new int[]{});
     }
 
-
     private int explore(int code) {
         Point point = this.sensor.getPosicao();
         int x, y;
@@ -567,7 +518,15 @@ public class Poupador extends ProgramaPoupador {
                 y = (int) (aux.getPoint().getY() + this.moves[i][1]);
                 Point newPoint = new Point(x, y);
 
-                if (visionPosition.contains(newPoint) && !visited.contains(newPoint)){
+                if (
+                        visionPosition.contains(newPoint) &&
+                                !visited.contains(newPoint) &&
+                                this.memento[x][y] != Constantes.numeroParede &&
+                                this.memento[x][y] != Constantes.numeroPastinhaPoder &&
+                                this.memento[x][y] != Constantes.numeroBanco &&
+                                this.memento[x][y] != Constantes.numeroPoupador01 &&
+                                this.memento[x][y] != Constantes.numeroPoupador02
+                ) {
                     Coordinate n = new Coordinate(newPoint, i, aux);
                     visited.add(n.getPoint());
                     queue.add(n);
