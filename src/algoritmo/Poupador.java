@@ -704,6 +704,16 @@ public class Poupador extends ProgramaPoupador {
             }
         }
 
+        for (int i = 1; i <= 5; i++) {
+            int pos = visao[movementVision.get(i)];
+            if ((pos <= 200) && (pos != 1) && (pos != -1)) {
+                if ((pos == Constantes.numeroPastinhaPoder) && !(this.sensor.getNumeroDeMoedas() >= 5)) {
+                    continue;
+                }
+                return i;
+            }
+        }
+
         return 0;
     }
 
