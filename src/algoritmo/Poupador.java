@@ -151,6 +151,8 @@ public class Poupador extends ProgramaPoupador {
 
     private final int[] visionMove = {0, 7, 16, 11, 12};
 
+    private int moedas;
+
     private final List<Integer> lastSteps = new ArrayList<>(Collections.nCopies(8, 0));
 
     private List<Point> visionPosition = new ArrayList<>();
@@ -165,6 +167,12 @@ public class Poupador extends ProgramaPoupador {
     }
 
     public int acao() {
+        if (moedas > this.sensor.getNumeroDeMoedas()) {
+            System.out.println("FUI ROUBADO!!");
+            moedas = this.sensor.getNumeroDeMoedas();
+        }else{
+            moedas = this.sensor.getNumeroDeMoedas();
+        }
         this.memorialize();
         int move = this.movimentation();
         this.collectCoins();
@@ -569,86 +577,141 @@ public class Poupador extends ProgramaPoupador {
 
     // LADRAO
 
-    private List<int[]> getPossibleMovements(List<int[]> ladrao, List<int[]> agente) {
-        List<int[]> possiblePositions = new ArrayList<>();
-        List<String> ladraoStr = ladrao.stream().map(Arrays::toString).collect(Collectors.toList());
-        List<String> agenteStr = agente.stream().map(Arrays::toString).collect(Collectors.toList());
-        agenteStr.removeAll(ladraoStr);
-        agenteStr.forEach(x -> {
-            String pos = x.replaceAll("[(\\[)(\\])]", "").replace(" ", "");
-            String[] posA = pos.split(",");
-            possiblePositions.add(new int[]{Integer.parseInt(posA[0]), Integer.parseInt(posA[1])});
-        });
-        return possiblePositions;
-    }
+    private int avoidLadrao() {
+        Map<Integer, Integer> posicaoOlfato = new HashMap<>();
+        posicaoOlfato.put(6, 0);
+        posicaoOlfato.put(7, 1);
+        posicaoOlfato.put(8, 2);
+        posicaoOlfato.put(11, 3);
+        posicaoOlfato.put(12, 4);
+        posicaoOlfato.put(15, 5);
+        posicaoOlfato.put(16, 6);
+        posicaoOlfato.put(17, 7);
 
-    private int pickMovement(Point agente, int[] movement) {
-        int moveX = (int) agente.getX() - movement[0];
-        int moveY = (int) agente.getY() - movement[1];
-        if ((int) agente.getX() < movement[0]) {
-            moveX = moveX * -1;
+        Map<Integer, Moves[]> movementOptions = new HashMap<>();
+        movementOptions.put(7, new Moves[]{Moves.Down, Moves.Right, Moves.Left});
+        movementOptions.put(12, new Moves[]{Moves.Left, Moves.Up, Moves.Down});
+        movementOptions.put(11, new Moves[]{Moves.Right, Moves.Up, Moves.Down});
+        movementOptions.put(16, new Moves[]{Moves.Up, Moves.Left, Moves.Right});
+        movementOptions.put(6, new Moves[]{Moves.Down, Moves.Right} );
+        movementOptions.put(8, new Moves[]{Moves.Down, Moves.Left});
+        movementOptions.put(15, new Moves[]{Moves.Up, Moves.Right});
+        movementOptions.put(17, new Moves[]{Moves.Up, Moves.Left});
+
+        Map<Integer, Integer> movementVision = new HashMap<>();
+        movementVision.put(Moves.Down.getValue(), 16);
+        movementVision.put(Moves.Up.getValue(), 7);
+        movementVision.put(Moves.Left.getValue(), 11);
+        movementVision.put(Moves.Right.getValue(), 12);
+
+        List<Integer> paredes = new ArrayList<>();
+        int[] visao = this.sensor.getVisaoIdentificacao();
+        List<Integer> posicaoLadroes = new ArrayList<>();
+        for (int i = 0; i < visao.length; i++) {
+            if ( visao[i] == 1 ) { paredes.add(i); }
+            if ( visao[i] >= 200 ) { posicaoLadroes.add(i); }
         }
-        if ((int) agente.getY() < movement[1]) {
-            moveY = moveY * -1;
+
+
+        List<Moves> safeMovements = new ArrayList<>();
+        for (int i = 0; i < posicaoLadroes.size(); i++) {
+            Integer posicao = posicaoLadroes.get(i);
+            if (!movementOptions.containsKey(posicao)) {
+                continue;
+            }
+            Moves[] options = movementOptions.get(posicao);
+            for (Moves moveOption: options) {
+                int mp = movementVision.get(moveOption.getValue());
+                if (visao[movementVision.get(moveOption.getValue())] == Constantes.numeroMoeda) {
+                    return moveOption.getValue();
+                }
+                if(!(paredes.contains(mp))) {
+                    if(!(posicaoLadroes.contains(mp))) {
+                        safeMovements.add(moveOption);
+                    }
+                }
+            }
+            List<Integer> possibleMoves = new ArrayList<>();
+            // Obter a mais safe Possivel
+            for (Moves move: safeMovements) {
+                int[] olfato = this.sensor.getAmbienteOlfatoPoupador();
+                int cheiro = olfato[posicaoOlfato.get(movementVision.get(move.getValue()))];
+
+                if (visao[movementVision.get(move.getValue())] == Constantes.numeroMoeda) {
+                    System.out.println("OPA MOEDA!! "+ move.getValue());
+                    return move.getValue();
+                }
+
+                if (visao[movementVision.get(move.getValue())] == Constantes.foraAmbiene) {
+                    continue;
+                }
+
+                if (visao[movementVision.get(move.getValue())] == Constantes.numeroPastinhaPoder) {
+                    if (this.sensor.getNumeroDeMoedas() >= 5) {
+                        System.out.println("OPA PASTILHA!! " + move.getValue());
+                        return move.getValue();
+                    }
+                }
+
+                if (visao[movementVision.get(move.getValue())] == Constantes.numeroParede) {
+                    continue;
+                }
+
+                if (cheiro > 1 || cheiro == 0) {
+                    possibleMoves.add(move.getValue());
+                }
+            }
+
+            if(possibleMoves.size() > 0) {
+                int rnd = new Random().nextInt(possibleMoves.size());
+                int move = possibleMoves.get(rnd);
+                System.out.printf("(POSSIBLE MOVES) LADRAO NA POS %s DESVIADO! %s\n", posicao, move);
+                return move;
+            }
+
+            if(safeMovements.size() > 0) {
+                int rnd = new Random().nextInt(safeMovements.size());
+                int move = safeMovements.get(rnd).getValue();
+                System.out.printf("(POSSIBLE MOVES) LADRAO NA POS %s DESVIADO! %s\n", posicao, move);
+                return move;
+            }
         }
-        int[] toDo = new int[] {moveX, moveY};
-        for (int i = 0; i < moves.length; i++) {
-            if(moves[i][0] == toDo[0] && moves[i][1] == toDo[1]) {
+
+        for (int i = 1; i <= 5; i++) {
+            int pos = visao[movementVision.get(i)];
+            if ((pos < 200) && (pos != 1) && (pos != -1)) {
+                if ((pos == Constantes.numeroPastinhaPoder) && !(this.sensor.getNumeroDeMoedas() >= 5)) {
+                    continue;
+                }
+                System.out.println("FALLBACK DE FUGIR");
+                if(movementVision.get(i) == 2) {
+                    if(visao[21] < 200 && visao[16] < 200) {
+                        return i;
+                    }
+                }
+
+                if(movementVision.get(i) == 3) {
+                    if(visao[10] < 200 && visao[11] < 200) {
+                        return i;
+                    }
+                }
+
+                if(movementVision.get(i) == 4) {
+                    if(visao[12] < 200 && visao[13] < 200) {
+                        return i;
+                    }
+                }
+
+                if(movementVision.get(i) == 1) {
+                    if(visao[2] < 200 && visao[7] < 200) {
+                        return i;
+                    }
+                }
                 return i;
             }
         }
+
         return 0;
-    }
-
-    private int avoidLadrao(int[] ladraoPosition) {
-        Point agente = this.sensor.getPosicao();
-        List<int[]> ladraoRange = new ArrayList<>();
-        List<int[]> newAgentePositions = new ArrayList<>();
-        for (int[] pos: possibleRange) {
-            ladraoRange.add(new int[] {ladraoPosition[0] + pos[0], ladraoPosition[1] + pos[1]});
-        }
-        for (int[] pos: moves) {
-            newAgentePositions.add(new int[] {(int) (agente.getX() + pos[0]), (int) (agente.getY() + pos[1])});
-        }
-        List<String> posicoes = ladraoRange.stream().map(Object::toString).collect(Collectors.toList());
-        ArrayList<int[]> possibleMovements = (ArrayList<int[]>) getPossibleMovements(ladraoRange, newAgentePositions);
-        for (int i = 0; i < possibleMovements.size() ; i++) {
-            if (possibleMovements.get(i)[0] == (int) agente.getX() &&
-                    possibleMovements.get(i)[1] == (int) agente.getY()) {
-                possibleMovements.remove(i);
-            }
-        }
-        Random rand = new Random();
-
-        for (int[] move: possibleMovements) {
-            int y = pickMovement(agente, move);
-            if (!(this.sensor.getVisaoIdentificacao()[visionMove[y]] == 1)) {
-                // ver se vai estar no range do ladrao
-                if (!inLadraoRange(ladraoRange, move))
-                    if(ladraoPosition[0] != move[0] && ladraoPosition[1] != move[1]) {
-                        System.out.println("deu bom");
-                        return y;
-                    }
-            }
-        }
-        int[] movement = possibleMovements.get(rand.nextInt(possibleMovements.size()));
-        return pickMovement(agente, movement);
-    }
-
-    public boolean inLadraoRange(List<int[]> ladraoRange, int[] move) {
-        Point agente = this.sensor.getPosicao();
-        for (int[] p: ladraoRange) {
-            if ( ((int) agente.getX() + move[0] == p[0]) || ((int) agente.getY() + move[1] == p[1]))
-                return true;
-        }
-        return false;
-    }
-
-    private int[] getWhereLadrao(Step ladrao) {
-        Step ladr = stepsToLadrao();
-        Point pos = this.sensor.getPosicao();
-        int[] toLadrao = moveHelper[ladr.getPositions()[0]];
-        return new int[]{(int) (pos.getX() + toLadrao[0]), (int) (pos.getY() +toLadrao[1])};
     }
 
     private boolean checkForLadrao(Step ladrao) {
@@ -657,6 +720,7 @@ public class Poupador extends ProgramaPoupador {
     }
 
     // LADRAO
+
 
     private int movimentation() {
         int[] vision = this.sensor.getVisaoIdentificacao();
@@ -667,12 +731,10 @@ public class Poupador extends ProgramaPoupador {
         Step stepsToBank = stepsToBank();
 
         if (checkForLadrao(stepsToLadrao)) {
-            int move = avoidLadrao(getWhereLadrao(stepsToLadrao));
-            System.out.printf("TINHA LADRAO AQUI!, ACAO TOMADA: %s\n", move);
-            return move;
-        } else {
-            return explore(Constantes.numeroMoeda);
+            return avoidLadrao();
         }
+
+        return explore(Constantes.numeroMoeda);
     }
 
     private int moveUp(int position, int[] vision) {
