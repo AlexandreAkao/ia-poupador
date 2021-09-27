@@ -195,6 +195,11 @@ public class Poupador extends ProgramaPoupador {
                     memoria.add(new Point(newPosX, newPosY));
                 }
 
+                if(vision[i] == Constantes.numeroBanco && !memoria.contains(new Point(newPosX, newPosY))) {
+                    System.out.println("pos do banco é:" + new Point(newPosX, newPosY));
+                    memoria.add(new Point(newPosX, newPosY));
+                }
+
                 if (memento[newPosX][newPosY] != 10) memento[newPosX][newPosY] = vision[i];
 
                 if (vision[i] != Constantes.semVisao && vision[i] != Constantes.numeroPastinhaPoder) {
