@@ -154,6 +154,7 @@ public class Poupador extends ProgramaPoupador {
     private final List<Integer> lastSteps = new ArrayList<>(Collections.nCopies(8, 0));
 
     private List<Point> visionPosition = new ArrayList<>();
+    private List<Point> memoria = new ArrayList<>();
 
     private final int[][] memento = new int[30][30];
 
@@ -182,15 +183,23 @@ public class Poupador extends ProgramaPoupador {
     private void memorialize() {
         int posX = (int) this.sensor.getPosicao().getX();
         int posY = (int) this.sensor.getPosicao().getY();
+        Point posAtual = sensor.getPosicao();
         int[] vision = this.sensor.getVisaoIdentificacao();
         memento[posX][posY] = 10;
-        visionPosition.clear();
+        memoria.remove(posAtual);
         for (int i = 0; i < vision.length; i++) {
             int newPosX = posX + moveHelper[i][0];
             int newPosY = posY + moveHelper[i][1];
-            visionPosition.add(new Point(newPosX, newPosY));
             if (vision[i] != Constantes.foraAmbiene) {
+                if(vision[i] == Constantes.numeroMoeda && !memoria.contains(new Point(newPosX, newPosY))) {
+                    memoria.add(new Point(newPosX, newPosY));
+                }
+
                 if (memento[newPosX][newPosY] != 10) memento[newPosX][newPosY] = vision[i];
+
+                if (vision[i] != Constantes.semVisao && vision[i] != Constantes.numeroPastinhaPoder) {
+                    visionPosition.add(new Point(newPosX, newPosY));
+                }
             }
         }
     }
@@ -526,43 +535,28 @@ public class Poupador extends ProgramaPoupador {
         return randomWithout(new int[]{});
     }
 
+
     private int explore(int code) {
-        int posX = (int) this.sensor.getPosicao().getX();
-        int posY = (int) this.sensor.getPosicao().getY();
+        Point point = this.sensor.getPosicao();
         int x, y;
         boolean find = false;
         List<Integer> movements = new ArrayList<>();
         LinkedList<Coordinate> queue = new LinkedList<>();
-        List<PointGraph> visited = new ArrayList<>();
+        List<Point> visited = new ArrayList<>();
 
-        List<PointGraph> memory = new ArrayList<>();
+        if (isInLoop() || memoria.size() == 0) return remember(code);
 
-        for (int i = 0; i < memento.length; i++) {
-            for (int j = 0; j < memento[i].length; j++) {
-                if (memento[i][j] == code) {
-                    int stepsTo = Math.abs(posX - i) + Math.abs(posY - j);
-                    memory.add(new PointGraph(new Point(i, j), stepsTo));
-                }
-            }
-        }
-
-        if (isInLoop()) return randomWithout(new int[]{});
-
-        memory.sort(Comparator.comparingInt(PointGraph::getStepsTo));
-
-        if (memory.size() == 0) return randomWithout(new int[]{});
-
-        Coordinate end = new Coordinate(memory.get(0).getPoint(), 0, null);
+        Coordinate end = new Coordinate(memoria.get(memoria.size() - 1), 0, null);
 
         Coordinate aux;
-        Coordinate currentPos = new Coordinate(new Point(posX, posY), 0, null);
-        visited.add(new PointGraph(currentPos.getPoint(), 0));
+        Coordinate currentPos = new Coordinate(point, 0, null);
+        visited.add(currentPos.getPoint());
         queue.add(currentPos);
 
         while (!queue.isEmpty()) {
             aux = queue.pop();
 
-            if (memory.contains(aux.getPoint())) {
+            if (memoria.contains(aux.getPoint())) {
                 find = true;
                 end = aux;
                 break;
@@ -574,8 +568,8 @@ public class Poupador extends ProgramaPoupador {
                 Point newPoint = new Point(x, y);
 
                 if (visionPosition.contains(newPoint) && !visited.contains(newPoint)){
-                    Coordinate n = new Coordinate(new Point(x, y), i, aux);
-                    visited.add(new PointGraph(n.getPoint(), -1));
+                    Coordinate n = new Coordinate(newPoint, i, aux);
+                    visited.add(n.getPoint());
                     queue.add(n);
                 }
             }
@@ -591,9 +585,8 @@ public class Poupador extends ProgramaPoupador {
         }
 
 
-        return randomWithout(new int[]{});
+        return remember(code);
     }
-
 
     // LADRAO
 
@@ -687,8 +680,6 @@ public class Poupador extends ProgramaPoupador {
     // LADRAO
 
     private int movimentation() {
-        int posX = (int) this.sensor.getPosicao().getX();
-        int posY = (int) this.sensor.getPosicao().getY();
         int[] vision = this.sensor.getVisaoIdentificacao();
 
         Step stepsToCoin = stepsToCoin();
@@ -696,31 +687,13 @@ public class Poupador extends ProgramaPoupador {
         Step stepsToLadrao = stepsToLadrao();
         Step stepsToBank = stepsToBank();
 
-        int moveToCoin = moveTo(stepsToCoin.getPositions());
-//        System.out.println("moveToCoin -- " + moveToCoin);
-
-        if(checkForLadrao(stepsToLadrao)) {
+        if (checkForLadrao(stepsToLadrao)) {
             var move = avoidLadrao(getWhereLadrao(stepsToLadrao));
             System.out.printf("TINHA LADRAO AQUI!, ACAO TOMADA: %s\n", move);
             return move;
+        } else {
+            return explore(Constantes.numeroMoeda);
         }
-
-        if (moveToCoin == -1) {
-//            int a = explore(Constantes.numeroMoeda);
-//            System.out.println(a);
-            moveToCoin = remember(Constantes.numeroMoeda);
-        }
-
-//        int[] moveTo = this.moves[moveToCoin];
-//        int newPosX = posX + moveTo[0];
-//        int newPosY = posY + moveTo[1];
-//
-//        if (this.memento[newPosX][newPosY] != Constantes.numeroMoeda) {
-//            System.out.println("Random");
-//            return randomWithout(new int[]{});
-//        }
-
-        return moveToCoin;
     }
 
     private int moveUp(int position, int[] vision) {
