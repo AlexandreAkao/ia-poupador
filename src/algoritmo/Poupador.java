@@ -167,8 +167,21 @@ public class Poupador extends ProgramaPoupador {
     public int acao() {
         this.memorialize();
         int move = this.movimentation();
+        this.collectCoins();
         setLastSteps(move);
         return move;
+    }
+
+
+    private void collectCoins(){
+//        System.out.println(this.sensor.getNumeroDeMoedas());
+        //verificar quando estiver perto do banco e se tiver maior que 0, guardar
+        for (Point posicaoBanco : memoryBank) {
+            if (posicaoBanco.getX() == 8 && posicaoBanco.getY() == 8 && sensor.getNumeroDeMoedas() > 0) {
+                System.out.println("cuida em ir pro banco, guardei:" + this.sensor.getNumeroDeMoedas());
+            }
+
+        }
     }
 
     private void setLastSteps(int newStep) {
@@ -206,7 +219,7 @@ public class Poupador extends ProgramaPoupador {
 
                 if(vision[i] == Constantes.numeroBanco && !memoryBank.contains(new Point(newPosX, newPosY))) {
                     System.out.println("pos do banco é:" + new Point(newPosX, newPosY));
-                    memoryBank.add(new Point(newPosX, newPosY));
+                    memoryBank.add(newPoint);
                 }
 
                 if (memento[newPosX][newPosY] != 10) memento[newPosX][newPosY] = vision[i];
